@@ -30,11 +30,12 @@ dataFile <- selectDirectory(
 )
 setwd(dataFile)
 
-boxFile <- list.files(pattern = 'BoxCount')
+dataFiles <- list.files()
 
-boxCount <- read.csv(boxFile[1])
+boxCount <- read.csv(dataFiles[grep("Box", dataFiles)])
+branchInfo <- read.csv(dataFiles[grep("Branch", dataFiles)])
+hullCircle <- read.csv(dataFiles[grep("Hull", dataFiles)])
+results <- read.csv(dataFiles[grep("Results", dataFiles)])
 
-
-
-
+#Set a cutoff value for which all real branches are larger and smaller branches will be excluded
 
