@@ -55,6 +55,9 @@ run("Outline", "stack");
 
 run("FracLac");
 
+waitForUser("FracLac", "1) Click BC \n 2) In grid design, change Num G to 4 \n 3) In graphics options, check the Metrics box \n 4) Click Ok \n 5) Click Scan \n \n Click Ok when FracLac is finished");
+
+
 /*  1) Click BC
  *  2) In grid design, change Num G to 4
  *  3) In graphics options, check the Metrics box
@@ -104,13 +107,12 @@ close("*");
 //Could write a java plugin?
 
 /*Duplicate the experiment workbook with the raw data output from skeleton analysis and add TRIM to the filename. All subsequent data trimming should occur in the duplicated workbook to preserve the raw data for future use and reference.
-Determine which length of fragments will be trimmed from the dataset by opening the skeletonized image in ImageJ and selecting the Line tool. Measure several fragments, taking note of the average length, and decide on a cutoff value.
+ * Determine which length of fragments will be trimmed from the dataset by opening the skeletonized image in ImageJ and selecting the Line tool. Measure several fragments, taking note of the average length, and decide on a cutoff value.
 NOTE: For the purposes of the data presented here, the cutoff length for undesired fragments is 0.5. This value should be consistent throughout a dataset.
 Custom sort the Excel spreadsheet by clicking Sort & Filter | Custom sort. Sort by "endpoint voxels" from largest to smallest and, in a new level, by "Mx branch pt" from largest to smallest.
 Remove every row that contains 2 endpoints with a maximum branch length of less than the cutoff value (i.e., 0.5). Sum the data in the endpoints column to calculate the total number of endpoints collected from the image.
 Repeat for Branch information data: sort by 'branch length' from largest to smallest. Scroll through the data and remove every row that has a branch length of less than the cutoff value(i.e., 0.5). Sum the values in the branch length column to calculate the summed length of all branches collected from the image.
 Repeat steps 4.11.3-4.11.5 for every image/sheet until all data have been trimmed and summed.
 Divide the data from each image (summed number of endpoints and summed branch length) by the number of microglia somas in the corresponding image. Enter the final data (endpoints/cell & branch length/cell) into statistical software.
-NOTE: The summed branch length/cell data may require conversion from length in pixels to microns*/
-
+NOTE: The summed branch length/cell data may require conversion from length in pixels to microns */
 
