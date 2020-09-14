@@ -15,6 +15,7 @@ run("Enhance Contrast...", "saturated=0.1");
 run("Unsharp Mask...", "radius=1 mask=0.20 stack");
 run("Despeckle", "stack");
 run("Auto Threshold", "method=Default white stack");
+run("Convert to Mask");
 run("Despeckle", "stack");
 run("Close-", "stack");
 run("Remove Outliers...", "radius=1 threshold=50 which=Bright stack");
@@ -25,6 +26,9 @@ run("Remove Outliers...", "radius=1 threshold=50 which=Bright stack");
 run("Duplicate...", "title=" + title + "_skeleton duplicate");
 
 run("Skeletonize", "stack");
+
+
+
 
 //make cell ROIs for fractal analysis
 
