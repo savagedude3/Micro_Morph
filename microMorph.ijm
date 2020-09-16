@@ -19,11 +19,22 @@ run("Gaussian Blur...", "sigma=3");
 setAutoThreshold("Default dark");
 run("Threshold...");
 waitForUser("Adjust Threshold");
+// make convert to mask work for stack
 run("Convert to Mask");
 run("Despeckle", "stack");
 run("Close-", "stack");
 run("Remove Outliers...", "radius=1 threshold=50 which=Bright stack");
 
+Stack.getDimensions(width, height, channels, slices, frames);
+print(slices);
+
+if(slices > 1){
+	run("Z Project...", "projection=[Max Intensity]");
+}
+
+//soma detection and measurement in 2D
+//can use the ROIs from this method as ROIs for 3D volume analysis
+//of Z stack images
 run("Duplicate...", "title=" + title + "_somas duplicate");
 run("Watershed");
 //will only count object larger than minPixel as somas
@@ -33,6 +44,18 @@ selectWindow("Results");
 dirSave = getDir("pick save destination");
 Table.save(dirSave + "Somas.csv");
 run("Close");
+
+
+//3D volume analysis 
+
+somaVolumes = newArray(roiManager("count"));
+
+for (i = 0; i < somaVolumes.length; i++){
+	roiManager("Select", i);
+	somaVolumes[i] = measureVol(i);
+}
+
+print(somaVolumes[0]);
 
 //setBatchMode("exit and display");
 //save?
@@ -136,3 +159,33 @@ Repeat steps 4.11.3-4.11.5 for every image/sheet until all data have been trimme
 Divide the data from each image (summed number of endpoints and summed branch length) by the number of microglia somas in the corresponding image. Enter the final data (endpoints/cell & branch length/cell) into statistical software.
 NOTE: The summed branch length/cell data may require conversion from length in pixels to microns */
 
+function measureVol(roiNum) { 
+// code from https://visikol.com/2018/11/blog-post-loading-and-measurement-of-volumes-in-3d-confocal-image-stacks-with-imagej/
+// Measure Volume of Thresholded Pixels in an Image Stack
+//
+//
+    run("Clear Results");   // First, clear the results table
+  
+    // loop through each slice in the stack. Start at n=1 (the first slice), 
+    // keep going while n <= nSlices (nSlices is the total number of slices in the stack)
+    // and increment n by one after each loop (n++)
+    for (n=1; n<=nSlices; n++) {  
+       setSlice(n);  // set the stack's current slice to n
+       run("Measure");   // Run the "Measure" function in ImageJ
+    }
+
+    // Create a variable that we will use to store the area measured in each slice
+    totalArea = 0;
+    // Loop through each result from 0 (the first result on the table) to nResult (the total number of results on the table)
+    for (n=0; n < nResults; n++)
+    {
+       totalArea += getResult("Area",n);   // Add the area of the current result to the total
+    }
+    // Get the calibration information from ImageJ and store into width, height, depth, and unit variables. 
+    // We will only be using depth and unit
+    getVoxelSize(width, height, depth, unit);
+    // Calculate the volume by multiplying the sum of area of each slice by the depth
+    volume = totalArea*depth;
+    // return the result of the volume calculation
+    return(volume);
+}
