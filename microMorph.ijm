@@ -48,14 +48,17 @@ run("Close");
 
 //3D volume analysis 
 
-somaVolumes = newArray(roiManager("count"));
-
-for (i = 0; i < somaVolumes.length; i++){
-	roiManager("Select", i);
-	somaVolumes[i] = measureVol(i);
+if(slices > 1){
+	
+	somaVolumes = newArray(roiManager("count"));
+	
+	for (i = 0; i < somaVolumes.length; i++){
+		roiManager("Select", i);
+		somaVolumes[i] = measureVol(i);
+	}
 }
 
-print(somaVolumes[0]);
+//print(somaVolumes[0]);
 
 //setBatchMode("exit and display");
 //save?
@@ -165,8 +168,8 @@ function measureVol(roiNum) {
 //
 //
     run("Clear Results");   // First, clear the results table
-  
-    // loop through each slice in the stack. Start at n=1 (the first slice), 
+  	
+   	run("Set Measurements...", "area centroid center perimeter fit shape integrated area_fraction stack limit redirect=None decimal=3"); // loop through each slice in the stack. Start at n=1 (the first slice), 
     // keep going while n <= nSlices (nSlices is the total number of slices in the stack)
     // and increment n by one after each loop (n++)
     for (n=1; n<=nSlices; n++) {  
@@ -176,16 +179,37 @@ function measureVol(roiNum) {
 
     // Create a variable that we will use to store the area measured in each slice
     totalArea = 0;
+    depthStart = -1;
+    depthEnd = 0;
     // Loop through each result from 0 (the first result on the table) to nResult (the total number of results on the table)
-    for (n=0; n < nResults; n++)
-    {
-       totalArea += getResult("Area",n);   // Add the area of the current result to the total
+    for (n=0; n < nResults; n++){
+    	
+       sliceArea = getResult("Area",n) * getResult("%Area",n);
+       totalArea += sliceArea;  
+       if(sliceArea > 0.5 && depthStart == -1){
+       		depthStart = n;
+       		depthEnd = n;
+       }
+       if(sliceArea > 0.5){
+       		depthEnd = n;
+       }
+       
+       // Add the area of the current result to the total
     }
+   
+	print(depthStart + " to " + depthEnd);    
     // Get the calibration information from ImageJ and store into width, height, depth, and unit variables. 
     // We will only be using depth and unit
     getVoxelSize(width, height, depth, unit);
-    // Calculate the volume by multiplying the sum of area of each slice by the depth
-    volume = totalArea*depth;
+   	//print(depth);
+   	 // Calculate the volume by multiplying the sum of area of each slice by the depth
+
+   	 
+    trueDepth = (depthEnd - depthStart + 1)/nSlices * depth;
+    volume = totalArea*trueDepth;
+
+    print("totalArea: " + totalArea);
+    print("trueDepth: " + trueDepth);
     // return the result of the volume calculation
     return(volume);
 }
