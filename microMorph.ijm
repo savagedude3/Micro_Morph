@@ -14,14 +14,30 @@ run("8-bit");
 run("Enhance Contrast...", "saturated=0.1");
 run("Unsharp Mask...", "radius=1 mask=0.20 stack");
 run("Despeckle", "stack");
-run("Auto Threshold", "method=Default white stack");
+run("Gaussian Blur...", "sigma=3");
+//run("Auto Threshold", "method=Default white stack");
+setAutoThreshold("Default dark");
+run("Threshold...");
+waitForUser("Adjust Threshold");
 run("Convert to Mask");
 run("Despeckle", "stack");
 run("Close-", "stack");
 run("Remove Outliers...", "radius=1 threshold=50 which=Bright stack");
 
+run("Duplicate...", "title=" + title + "_somas duplicate");
+run("Watershed");
+//will only count object larger than minPixel as somas
+minPixel = 6000;
+run("Analyze Particles...", "size="+ minPixel +"-Infinity pixel display exclude clear include summarize record add");
+selectWindow("Results");
+dirSave = getDir("pick save destination");
+Table.save(dirSave + "Somas.csv");
+run("Close");
+
 //setBatchMode("exit and display");
 //save?
+
+selectWindow(title + "_binary");
 
 run("Duplicate...", "title=" + title + "_skeleton duplicate");
 
