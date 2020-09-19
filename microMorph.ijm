@@ -1,5 +1,8 @@
+//Microglia Morphology macro for ImageJ
 
 open();
+imageDir = getInfo("image.directory") + getInfo("image.filename");
+
 
 //works for 2D max projection and 3D Z-stacks
 //can use Image>Stacks>3D Project to see image or skeleton 
@@ -20,7 +23,7 @@ setAutoThreshold("Default dark");
 run("Threshold...");
 waitForUser("Adjust Threshold");
 // make convert to mask work for stack
-run("Convert to Mask");
+run("Convert to Mask", "method=Default background=Dark");
 run("Despeckle", "stack");
 run("Close-", "stack");
 run("Remove Outliers...", "radius=1 threshold=50 which=Bright stack");
@@ -38,13 +41,17 @@ if(slices > 1){
 run("Duplicate...", "title=" + title + "_somas duplicate");
 run("Watershed");
 //will only count object larger than minPixel as somas
-minPixel = 6000;
-run("Analyze Particles...", "size="+ minPixel +"-Infinity pixel display exclude clear include summarize record add");
+minArea = 30;
+minCirc = 0.4;
+run("Analyze Particles...", "size="+ minArea +"-Infinity circularity="+ minCirc +"-1.00 display exclude clear include summarize record add");
 selectWindow("Results");
 dirSave = getDir("pick save destination");
-Table.save(dirSave + "Somas.csv");
+Table.save(dirSave + "somas.csv");
 run("Close");
-
+selectWindow(title + "_somas");
+save(dirSave + "somas.tiff");
+roiManager("save", dirSave + "somaROIs.zip");
+roiManager("reset");
 
 //3D volume analysis 
 
@@ -70,57 +77,6 @@ run("Duplicate...", "title=" + title + "_skeleton duplicate");
 run("Skeletonize", "stack");
 
 
-
-
-//make cell ROIs for fractal analysis
-
-//select cell
-cellNum = 1;
-
-selectWindow(title);
-
-run("Z Project...", "projection=[Max Intensity]");
-
-waitForUser("Cell ROI", "Draw a freehand ROI around a cell in the image. Be sure to capture the entire cell in the ROI without any parts of other cells or background");
-
-roiManager("add");
-
-selectWindow(title+"_binary");
-run("Duplicate...", "title="+ title + "_binary_cell_" + cellNum +" duplicate");
-
-roiManager("Select", 0);
-
-run("Clear Outside", "stack");
-
-//save individual cell
-
-run("Outline", "stack");
-
-//probably need to save cell outlines and then run FracLac's internal
-//batch mode since it can't be run as a script
-
-run("FracLac");
-
-waitForUser("FracLac", "1) Click BC \n 2) In grid design, change Num G to 4 \n 3) In graphics options, check the Metrics box \n 4) Click Ok \n 5) Click Scan \n \n Click Ok when FracLac is finished");
-
-
-/*  1) Click BC
- *  2) In grid design, change Num G to 4
- *  3) In graphics options, check the Metrics box
- *  4) Click Ok
- *  5) Click Scan
- */
-
-
-selectWindow("Hull and Circle Results");
-dirSave = getDir("pick save destination");
-Table.save(dirSave + "HullCircle.csv");
-run("Close");
-selectWindow("Box Count Summary FileFracLac 2015Sep090313a9330");
-Table.save(dirSave + "BoxCountSummary.csv");
-run("Close");
-
-
 //Need to optimize skeleton
 /* NOTE: It is likely that the image processing will require optimization with the addition or deletion of the above suggested steps. In this process, skeletonized images are assessed for accuracy by creating an overlay of the skeleton and the original image. Somas should be single origin points with processes emanating from the center; circular somas confound the data and should be avoided through protocol adjustment. An example of a single origin point versus circular somas is illustrated in Figure 1.
  *  
@@ -139,13 +95,27 @@ run("Analyze Skeleton (2D/3D)", "prune=none show");
 //save "Results" results table
 
 selectWindow("Branch information");
-dirSave = getDir("pick save destination");
+//dirSave = getDir("pick save destination");
 Table.save(dirSave + "BranchInfo.csv");
 run("Close");
 selectWindow("Results");
 Table.save(dirSave + "Results.csv");
 run("Close");
+selectWindow(title + "_skeleton");
+save(dirSave + title + "_skeleton.tif");
+selectWindow(title + "_binary");
+save(dirSave + title + "_binary.tif");
+
+
 close("*");
+selectWindow("Summary");
+run("Close");
+selectWindow("Log");
+run("Close");
+selectWindow("Threshold");
+run("Close");
+selectWindow("ROI Manager");
+run("Close");
 
 //get cellNum from outline somehow (if it is total number)
 
@@ -162,14 +132,91 @@ Repeat steps 4.11.3-4.11.5 for every image/sheet until all data have been trimme
 Divide the data from each image (summed number of endpoints and summed branch length) by the number of microglia somas in the corresponding image. Enter the final data (endpoints/cell & branch length/cell) into statistical software.
 NOTE: The summed branch length/cell data may require conversion from length in pixels to microns */
 
+
+//make cell ROIs for fractal analysis
+
+//select cell
+cellNum = 1;
+
+open(imageDir);
+
+run("Z Project...", "projection=[Max Intensity]");
+
+moreCells = getBoolean("Are there more cells you want to analyze with FracLac?");
+
+while(moreCells){
+	waitForUser("Cell ROI", "Draw a freehand ROI around a cell in the image. Be sure to capture the entire cell in the ROI without any parts of other cells or background");
+	
+	roiManager("add");
+
+	open(dirSave + title + "_binary.tif");
+	
+	selectWindow(title+"_binary.tif");
+	run("Duplicate...", "title="+ title + "_binary_cell_" + cellNum +" duplicate");
+	
+	roiManager("Select", 0);
+	
+	run("Clear Outside", "stack");
+	
+	//save individual cell
+	
+	run("Outline", "stack");
+	
+	//probably need to save cell outlines and then run FracLac's internal
+	//batch mode since it can't be run as a script
+	
+	run("FracLac");
+	
+	waitForUser("FracLac", "1) Click BC \n 2) In grid design, change Num G to 4 \n 3) In graphics options, check the Metrics box \n 4) Click Ok \n 5) Click Scan \n \n Click Ok when FracLac is finished");
+	
+	
+	/*  1) Click BC
+	 *  2) In grid design, change Num G to 4
+	 *  3) In graphics options, check the Metrics box
+	 *  4) Click Ok
+	 *  5) Click Scan
+	 */
+	
+	
+	selectWindow("Hull and Circle Results");
+	//dirSave = getDir("pick save destination");
+	Table.save(dirSave + "HullCircle_"+ cellNum +".csv");
+	run("Close");
+	selectWindow("Box Count Summary FileFracLac 2015Sep090313a9330");
+	Table.save(dirSave + "BoxCountSummary_"+ cellNum +".csv");
+	run("Close");
+	roiManager("save", dirSave + "cell_" + cellNum + "_ROI.zip");
+	roiManager("reset");
+
+	moreCells = getBoolean("Are there more cells you want to analyze with FracLac?");
+
+	if(moreCells == true){
+		//reset for next cell
+		cellNum = cellNum + 1;
+	
+		close("*");
+	
+		run("Close All");
+	
+		open(imageDir);
+	
+		run("Z Project...", "projection=[Max Intensity]");
+	}
+}
+
+close("*");
+run("Close All");
+
+
 function measureVol(roiNum) { 
-// code from https://visikol.com/2018/11/blog-post-loading-and-measurement-of-volumes-in-3d-confocal-image-stacks-with-imagej/
-// Measure Volume of Thresholded Pixels in an Image Stack
-//
-//
+	// code from https://visikol.com/2018/11/blog-post-loading-and-measurement-of-volumes-in-3d-confocal-image-stacks-with-imagej/
+	// Measure Volume of Thresholded Pixels in an Image Stack
+
+	
     run("Clear Results");   // First, clear the results table
   	
-   	run("Set Measurements...", "area centroid center perimeter fit shape integrated area_fraction stack limit redirect=None decimal=3"); // loop through each slice in the stack. Start at n=1 (the first slice), 
+   	run("Set Measurements...", "area centroid center perimeter fit shape integrated area_fraction stack limit redirect=None decimal=3"); 				  
+   	// loop through each slice in the stack. Start at n=1 (the first slice), 
     // keep going while n <= nSlices (nSlices is the total number of slices in the stack)
     // and increment n by one after each loop (n++)
     for (n=1; n<=nSlices; n++) {  
