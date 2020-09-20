@@ -41,8 +41,13 @@ if(slices > 1){
 run("Duplicate...", "title=" + title + "_somas duplicate");
 run("Watershed");
 //will only count object larger than minPixel as somas
-minArea = 30;
-minCirc = 0.4;
+Dialog.createNonBlocking("Soma Segmentation");
+Dialog.addMessage("Check that the watershed is correctly segmenting somas \n and measure the minArea and minCircularity you would like to count as a soma");
+Dialog.addNumber("Minimum Area", 20);
+Dialog.addNumber("Minimum Circularity", 0.3);
+Dialog.show();
+minArea = Dialog.getNumber();
+minCirc = Dialog.getNumber();
 run("Analyze Particles...", "size="+ minArea +"-Infinity circularity="+ minCirc +"-1.00 display exclude clear include summarize record add");
 selectWindow("Results");
 dirSave = getDir("pick save destination");
