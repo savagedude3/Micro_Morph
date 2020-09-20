@@ -51,19 +51,44 @@ run("Close");
 selectWindow(title + "_somas");
 save(dirSave + "somas.tiff");
 roiManager("save", dirSave + "somaROIs.zip");
-roiManager("reset");
 
 //3D volume analysis 
 
+selectWindow(title + "_binary");
+somaVolumes = newArray(roiManager("count"));
+
 if(slices > 1){
-	
-	somaVolumes = newArray(roiManager("count"));
 	
 	for (i = 0; i < somaVolumes.length; i++){
 		roiManager("Select", i);
-		somaVolumes[i] = measureVol(i);
+		measureVol(i);
+		selectWindow("Results");
+		Table.save(dirSave + title + "_cell_" + i + "_vol_results.csv");
+		somaVolumes[i] = processVol();
+		Table.reset("Results");
 	}
 }
+
+if(slices == 1){
+	
+	for (i = 0; i < somaVolumes.length; i++){
+		roiManager("Select", i);
+		run("Measure");
+		somaVolumes[i] = getResult("Area",0) * getResult("%Area",0);
+		selectWindow("Results");
+		Table.save(dirSave + title + "_cell_" + i + "_area_results.csv");
+		Table.reset("Results");
+	}
+}
+
+Table.create("volumes");
+Table.setColumn("cellNum", newArray(somaVolumes.length));
+Table.setColumn("volume", somaVolumes);
+Table.save(dirSave + title + "_volumes.csv");
+selectWindow("volumes");
+run("Close");
+
+roiManager("reset");
 
 //print(somaVolumes[0]);
 
@@ -71,6 +96,7 @@ if(slices > 1){
 //save?
 
 selectWindow(title + "_binary");
+run("Select All");
 
 run("Duplicate...", "title=" + title + "_skeleton duplicate");
 
@@ -222,9 +248,14 @@ function measureVol(roiNum) {
     for (n=1; n<=nSlices; n++) {  
        setSlice(n);  // set the stack's current slice to n
        run("Measure");   // Run the "Measure" function in ImageJ
+       //waitForUser("results?");
     }
+}
 
-    // Create a variable that we will use to store the area measured in each slice
+function processVol() { 
+// process the data tables from measureVol to give volume as return
+
+// Create a variable that we will use to store the area measured in each slice
     totalArea = 0;
     depthStart = -1;
     depthEnd = 0;
@@ -260,3 +291,4 @@ function measureVol(roiNum) {
     // return the result of the volume calculation
     return(volume);
 }
+
