@@ -4,6 +4,7 @@ open();
 imageDir = getInfo("image.directory") + getInfo("image.filename");
 
 
+
 //works for 2D max projection and 3D Z-stacks
 //can use Image>Stacks>3D Project to see image or skeleton 
 
