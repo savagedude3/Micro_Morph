@@ -14,6 +14,7 @@ title = getTitle();
 run("Duplicate...", "title=" + title + "_binary duplicate");
 selectWindow(title + "_binary");
 
+//processing for branches
 run("8-bit");
 run("Enhance Contrast...", "saturated=0.1");
 run("Unsharp Mask...", "radius=1 mask=0.20 stack");
@@ -22,7 +23,27 @@ run("Gaussian Blur...", "sigma=3");
 //run("Auto Threshold", "method=Default white stack");
 setAutoThreshold("Default dark");
 run("Threshold...");
-waitForUser("Adjust Threshold");
+waitForUser("Adjust Threshold for Branches");
+// make convert to mask work for stack
+run("Convert to Mask", "method=Default background=Dark");
+run("Despeckle", "stack");
+run("Close-", "stack");
+run("Remove Outliers...", "radius=1 threshold=50 which=Bright stack");
+
+selectWindow(title);
+run("Duplicate...", "title=" + title + "_somas1 duplicate");
+selectWindow(title + "_somas1");
+
+//processing for somas
+run("8-bit");
+run("Enhance Contrast...", "saturated=0.1");
+run("Unsharp Mask...", "radius=1 mask=0.20 stack");
+run("Despeckle", "stack");
+run("Gaussian Blur...", "sigma=3");
+//run("Auto Threshold", "method=Default white stack");
+setAutoThreshold("Default dark");
+run("Threshold...");
+waitForUser("Adjust Threshold so that somas are filled in \n (likely a lower value than you used for branches\)");
 // make convert to mask work for stack
 run("Convert to Mask", "method=Default background=Dark");
 run("Despeckle", "stack");
@@ -39,7 +60,7 @@ if(slices > 1){
 //soma detection and measurement in 2D
 //can use the ROIs from this method as ROIs for 3D volume analysis
 //of Z stack images
-run("Duplicate...", "title=" + title + "_somas duplicate");
+run("Duplicate...", "title=" + title + "_somas2 duplicate");
 run("Watershed");
 //will only count object larger than minPixel as somas
 Dialog.createNonBlocking("Soma Segmentation");
@@ -54,7 +75,7 @@ selectWindow("Results");
 dirSave = getDir("pick save destination");
 Table.save(dirSave + "somas.csv");
 run("Close");
-selectWindow(title + "_somas");
+selectWindow(title + "_somas2");
 save(dirSave + "somas.tiff");
 roiManager("save", dirSave + "somaROIs.zip");
 
