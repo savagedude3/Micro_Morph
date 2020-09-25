@@ -1,33 +1,70 @@
 //Microglia Morphology macro for ImageJ
 
-open();
-imageDir = getInfo("image.directory") + getInfo("image.filename");
-
-
-
 //works for 2D max projection and 3D Z-stacks
 //can use Image>Stacks>3D Project to see image or skeleton 
 
-//setBatchMode(true);
+//open() will give a file explorer window to select an image
+//I'll probably put the whole macro into a for loop at some point
+//so that it can be run on a whole folder of images
+open();
+//this gets the filepath of the image so we can open it again 
+//if we need to
+imageDir = getInfo("image.directory") + getInfo("image.filename");
 
+
+//this gets the name of the image so that we can select it explicitly
+//and name other images we'll create with a name that shows they
+//came from this image
 title = getTitle();
+//we duplicate the original image for preprocessing so that
+//the original is unaltered
 run("Duplicate...", "title=" + title + "_binary duplicate");
+//we explicitly select our duplicate for ImageJ to work on
 selectWindow(title + "_binary");
 
 //processing for branches
+
+/* Different microscope settings will record different ranges of
+ * intensity values. 8-bit means that each pixel in the image
+ * is an 8bit byte which is an intensity value with 2^8 possible
+ * values (0-255). This may be losing a little bit of information 
+ * but will make a lot of our calculations easier and is a common
+ * practice. 
+ */
 run("8-bit");
+//This sets the brightness of the image so that 0.1% of the pixels are //saturated without changing the actual intensity values (only how
+//ImageJ displays them)
 run("Enhance Contrast...", "saturated=0.1");
+//Unsharp mask subtracts a gaussian filter from the image
+//to help get rid of background
 run("Unsharp Mask...", "radius=1 mask=0.20 stack");
+//Despeckle is a median filter, replacing each pixel's intensity
+//with the median intensity value of its 3x3 neighborhood
 run("Despeckle", "stack");
+//This is a gaussian blur filter which will change the value
+//of each pixel using a kernel that is normally distributed.
+//The overall effect is to blur the image
+//sigma controls the variance of the gaussian distribution so 
+//a higher sigma value is going to blur the image more.
 run("Gaussian Blur...", "sigma=3");
-//run("Auto Threshold", "method=Default white stack");
+//This uses autothresholding to set where the threshold starts at
 setAutoThreshold("Default dark");
+//This allows the user to set the threshold and waits for the user
+//to click ok while also showing some text
 run("Threshold...");
 waitForUser("Adjust Threshold for Branches");
-// make convert to mask work for stack
+//This applies the threshold to make a binary image where every 
+//pixel at or above your minimum value is set to 255 and every
+//value lower than the threshold is set to 0
 run("Convert to Mask", "method=Default background=Dark");
 run("Despeckle", "stack");
+//This dilates and then erodes the image. A pixel is added to 
+//each edge and then a pixel is subtracted from each edge.
+//This results in merging some edges and can help to fill in
+//small wholes in the image.
 run("Close-", "stack");
+//This does another median filter and will remove a pixel if it
+//deviates from its neighbors, removing some noise.
 run("Remove Outliers...", "radius=1 threshold=50 which=Bright stack");
 
 selectWindow(title);
@@ -50,9 +87,13 @@ run("Despeckle", "stack");
 run("Close-", "stack");
 run("Remove Outliers...", "radius=1 threshold=50 which=Bright stack");
 
+//This gets the number of Zstacks or slices in the image
+//so we can treat Zstacks and regular images differently
 Stack.getDimensions(width, height, channels, slices, frames);
 print(slices);
 
+//if it is a Zstack, we want to make a z projection to more easily
+//see the cell somas
 if(slices > 1){
 	run("Z Project...", "projection=[Max Intensity]");
 }
@@ -61,22 +102,40 @@ if(slices > 1){
 //can use the ROIs from this method as ROIs for 3D volume analysis
 //of Z stack images
 run("Duplicate...", "title=" + title + "_somas2 duplicate");
+//watershed will use an erosion-like technique to find the middle of
+//each object and then draw lines (called watersheds) to separate 
+//the object from eachother. This is slightly different than
+//the standard watershed algorithm but has the same basic effect.
 run("Watershed");
 //will only count object larger than minPixel as somas
-Dialog.createNonBlocking("Soma Segmentation");
+//This collects the minArea and minCirc values using a dialog box.
+//It is common in programming for these to have separate create,
+//add and show steps. 
+Dialog.create("Soma Segmentation");
 Dialog.addMessage("Check that the watershed is correctly segmenting somas \n and measure the minArea and minCircularity you would like to count as a soma");
 Dialog.addNumber("Minimum Area", 20);
 Dialog.addNumber("Minimum Circularity", 0.3);
 Dialog.show();
 minArea = Dialog.getNumber();
 minCirc = Dialog.getNumber();
+//Analyze particles counts each of the distinct particles in the image
+//and will make some measurements about them. It will ignore
+//objects with areas less than minArea and circularity values
+//less than minCirc. Circ = 4pi(area/perimeter^2) and is 1 for a 
+//percet circle
 run("Analyze Particles...", "size="+ minArea +"-Infinity circularity="+ minCirc +"-1.00 display exclude clear include summarize record add");
+//here we pick the results table that analyze particles made so we can
+//save it. Most ImageJ functions will have data in a table named 
+//"Results"
 selectWindow("Results");
+//Here we ask the user for a folder to save the results into
 dirSave = getDir("pick save destination");
 Table.save(dirSave + "somas.csv");
 run("Close");
 selectWindow(title + "_somas2");
 save(dirSave + "somas.tiff");
+//Analyze particles saved the outline of the cells it counted 
+//into the ROI manager which we can save to use later
 roiManager("save", dirSave + "somaROIs.zip");
 
 //3D volume analysis 
