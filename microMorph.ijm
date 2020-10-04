@@ -167,8 +167,14 @@ if(slices == 1){
 	}
 }
 
+numArray = newArray(somaVolumes.length);
+for (i = 0; i < numArray.length; i++) {
+	numArray[i] = i;
+}
+
+
 Table.create("volumes");
-Table.setColumn("cellNum", newArray(somaVolumes.length));
+Table.setColumn("cellNum", numArray);
 Table.setColumn("volume", somaVolumes);
 Table.save(dirSave + title + "_volumes.csv");
 selectWindow("volumes");

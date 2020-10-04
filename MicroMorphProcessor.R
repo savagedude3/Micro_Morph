@@ -1,7 +1,7 @@
 #author Justin Savage
 #js664@duke.edu
 #Version 1.0
-#9/12/20
+#10/4/20
 
 #loaded RStudioAPI to use for selecting working directory
 if("rstudioapi" %in% rownames(installed.packages()) == FALSE) 
@@ -88,7 +88,7 @@ dataOut$ImageName[1] <- "Z_Stack_Practice"
 dataOut$BranchLengthPerCell <- branchLengthPerCell
 dataOut$EndPointsPerCell <- endPointsPerCell
 
-
+write.csv(dataOut, "dataOut.csv")
 
 
 
