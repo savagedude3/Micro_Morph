@@ -260,7 +260,9 @@ open(imageDir);
 
 run("Z Project...", "projection=[Max Intensity]");
 
-moreCells = getBoolean("Are there more cells you want to analyze with FracLac?");
+//moreCells = getBoolean("Are there more cells you want to analyze with FracLac?");
+
+moreCells = false;
 
 while(moreCells){
 	waitForUser("Cell ROI", "Draw a freehand ROI around a cell in the image. Be sure to capture the entire cell in the ROI without any parts of other cells or background");

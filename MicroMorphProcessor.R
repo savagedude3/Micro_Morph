@@ -35,6 +35,9 @@ dataFiles <- list.files()
 branchInfo <- read.csv(dataFiles[grep("Branch", dataFiles)])
 results <- read.csv(dataFiles[grep("Results", dataFiles)])
 
+vols <- keyFiles <- list.files(pattern = 'vol_results')
+numCells <- length(vols)
+
 dataOut <- tibble(
   ImageName = "", 
   BranchLengthPerCell = 0, 
@@ -68,7 +71,8 @@ dataOut <- tibble(
 #into statistical software.
 #NOTE: The summed branch length/cell data may require conversion from length in pixels to microns */
 
-cutoff <- as.numeric(showPrompt("Cutoff Value", "What is the shortest branch length to count?", default = 2.0))
+#cutoff <- as.numeric(showPrompt("Cutoff Value", "What is the shortest branch length to count?", default = 2.0))
+cutoff <- 2
 
 results <- filter(results, X..End.point.voxels >= 2)
 results <- filter(results, Maximum.Branch.Length >= cutoff)
@@ -78,13 +82,17 @@ branchInfo <- filter(branchInfo, Branch.length > cutoff)
 totBranchLength <- sum(branchInfo$Branch.length)
 
 #Divide image totals by the number of cells
-numCells <- as.numeric(showPrompt("Number of Cells", "How many cells were in the image?", default = 2.0))
+#numCells <- as.numeric(showPrompt("Number of Cells", "How many cells were in the image?", default = 2.0))
 
 endPointsPerCell <- totEndPoints/numCells
 branchLengthPerCell <- totBranchLength/numCells
 
+#change so imageName is correct
+tempImageName <- str_split(dataFile, "/")
+tempImageName <- tempImageName[[length(tempImageName)]]
+tempImageName <- tempImageName[length(tempImageName)]
 
-dataOut$ImageName[1] <- "Z_Stack_Practice"
+dataOut$ImageName[1] <- tempImageName
 dataOut$BranchLengthPerCell <- branchLengthPerCell
 dataOut$EndPointsPerCell <- endPointsPerCell
 
