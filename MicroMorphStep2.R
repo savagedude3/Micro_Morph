@@ -77,5 +77,40 @@ for (i in c(1:length(folders))) {
 leftData <- filter(allData, Side == "L")
 rightData <- filter(allData, Side == "R")
 
+sideMeans <- tibble(
+  Side = c("L", "R"),
+  branchMean = c(mean(leftData$BranchLengthPerCell),mean(rightData$BranchLengthPerCell)),
+  endpointsMean = c(mean(leftData$EndPointsPerCell),mean(rightData$EndPointsPerCell))
+)
+
+sideMeans$branchSD <- 0
+pairStDev <- group_by(allData, Side) %>%
+  summarize(StDev = sd(BranchLengthPerCell)/length(filter(allData, Side == "L"))) 
+
+sideMeans$branchSD <- pairStDev$StDev
+
+sideMeans$endpointsSD <- 0
+pairStDev <- group_by(allData, Side) %>%
+  summarize(StDev = sd(EndPointsPerCell)/length(filter(allData, Side == "L"))) 
+
+sideMeans$endpointsSD <- pairStDev$StDev
+
 t.test(formula = BranchLengthPerCell ~ Side, data =allData)
 
+ggplot(allData) + 
+  geom_point(mapping = aes(x = Side, y = BranchLengthPerCell)) +
+  geom_col(data = sideMeans, mapping = aes(x = Side, y = branchMean, fill = Side), alpha = 0.5) +
+  geom_errorbar(data = sideMeans ,mapping = aes(x = Side, ymax = (branchMean+branchSD), ymin = (branchMean-branchSD))) +
+  scale_x_discrete(limits = c("L","R"))
+
+ggsave("branchPlot.png", width = 3, height = 5)
+
+t.test(formula = EndPointsPerCell ~ Side, data =allData)
+
+ggplot(allData) + 
+  geom_point(mapping = aes(x = Side, y = EndPointsPerCell)) +
+  geom_col(data = sideMeans, mapping = aes(x = Side, y = endpointsMean, fill = Side), alpha = 0.5) +
+  geom_errorbar(data = sideMeans ,mapping = aes(x = Side, ymax = (endpointsMean+endpointsSD), ymin = (endpointsMean-endpointsSD))) +
+  scale_x_discrete(limits = c("L","R"))
+
+ggsave("endpointsPlot.png", width = 3, height = 5)
