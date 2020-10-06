@@ -5,23 +5,33 @@
 
 dirSource = getDir("Choose Source Directory");
 listSource = getFileList(dirSource);
-dirSave = dirSource+ File.separator +"outputs"
-File.makeDirectory(dirSave);
 
-print(listSource[0] + " 1 of " + listSource.length);
+
 
 
 for (i = 0; i < listSource.length; i++) {
 
 
+	setBatchMode(true);
+
 	//open() will give a file explorer window to select an image
 	//I'll probably put the whole macro into a for loop at some point
 	//so that it can be run on a whole folder of images
-	open(listSource[i]);
+	print("Processing" + listSource[i] + " " + (i+1)+" of " + listSource.length);
+	open(dirSource + listSource[i]);
 	//this gets the filepath of the image so we can open it again 
 	//if we need to
 	imageDir = getInfo("image.directory") + getInfo("image.filename");
-	
+	title = getTitle();
+	splitName = split(title, ".");
+	dirSave = dirSource+ File.separator + splitName[0] +"_outputs" + File.separator;
+	File.makeDirectory(dirSave);
+
+	//This gets the number of Zstacks or slices in the image
+	//so we can treat Zstacks and regular images differently
+	//displays middle stack
+	Stack.getDimensions(width, height, channels, slices, frames);
+	setSlice(slices/2);
 	
 	//this gets the name of the image so that we can select it explicitly
 	//and name other images we'll create with a name that shows they
@@ -58,6 +68,10 @@ for (i = 0; i < listSource.length; i++) {
 	//sigma controls the variance of the gaussian distribution so 
 	//a higher sigma value is going to blur the image more.
 	run("Gaussian Blur...", "sigma=3");
+
+	//show image for thresholding
+	setBatchMode("show");
+	
 	//This uses autothresholding to set where the threshold starts at
 	setAutoThreshold("Default dark");
 	//This allows the user to set the threshold and waits for the user
@@ -68,6 +82,10 @@ for (i = 0; i < listSource.length; i++) {
 	//pixel at or above your minimum value is set to 255 and every
 	//value lower than the threshold is set to 0
 	run("Convert to Mask", "method=Default background=Dark");
+
+	//hide the image
+	setBatchMode("hide");
+	
 	run("Despeckle", "stack");
 	//This dilates and then erodes the image. A pixel is added to 
 	//each edge and then a pixel is subtracted from each edge.
@@ -77,31 +95,32 @@ for (i = 0; i < listSource.length; i++) {
 	//This does another median filter and will remove a pixel if it
 	//deviates from its neighbors, removing some noise.
 	run("Remove Outliers...", "radius=1 threshold=50 which=Bright stack");
+
+	//change to allow separate processing for somas
+	somaThreshBool = false;
+
+	if (somaThreshBool == true){
 	
-	selectWindow(title);
-	run("Duplicate...", "title=" + title + "_somas1 duplicate");
-	selectWindow(title + "_somas1");
-	
-	//processing for somas
-	run("8-bit");
-	run("Enhance Contrast...", "saturated=0.1");
-	run("Unsharp Mask...", "radius=1 mask=0.20 stack");
-	run("Despeckle", "stack");
-	run("Gaussian Blur...", "sigma=3");
-	//run("Auto Threshold", "method=Default white stack");
-	setAutoThreshold("Default dark");
-	run("Threshold...");
-	waitForUser("Adjust Threshold so that somas are filled in \n (likely a lower value than you used for branches\)");
-	// make convert to mask work for stack
-	run("Convert to Mask", "method=Default background=Dark");
-	run("Despeckle", "stack");
-	run("Close-", "stack");
-	run("Remove Outliers...", "radius=1 threshold=50 which=Bright stack");
-	
-	//This gets the number of Zstacks or slices in the image
-	//so we can treat Zstacks and regular images differently
-	Stack.getDimensions(width, height, channels, slices, frames);
-	print(slices);
+		selectWindow(title);
+		run("Duplicate...", "title=" + title + "_somas1 duplicate");
+		selectWindow(title + "_somas1");
+		
+		//processing for somas
+		run("8-bit");
+		run("Enhance Contrast...", "saturated=0.1");
+		run("Unsharp Mask...", "radius=1 mask=0.20 stack");
+		run("Despeckle", "stack");
+		run("Gaussian Blur...", "sigma=3");
+		//run("Auto Threshold", "method=Default white stack");
+		setAutoThreshold("Default dark");
+		run("Threshold...");
+		waitForUser("Adjust Threshold so that somas are filled in \n (likely a lower value than you used for branches\)");
+		// make convert to mask work for stack
+		run("Convert to Mask", "method=Default background=Dark");
+		run("Despeckle", "stack");
+		run("Close-", "stack");
+		run("Remove Outliers...", "radius=1 threshold=50 which=Bright stack");
+	}
 	
 	//if it is a Zstack, we want to make a z projection to more easily
 	//see the cell somas
@@ -122,20 +141,32 @@ for (i = 0; i < listSource.length; i++) {
 	//This collects the minArea and minCirc values using a dialog box.
 	//It is common in programming for these to have separate create,
 	//add and show steps. 
-	Dialog.create("Soma Segmentation");
-	Dialog.addMessage("Check that the watershed is correctly segmenting somas \n and measure the minArea and minCircularity you would like to count as a soma");
-	Dialog.addNumber("Minimum Area", 20);
-	Dialog.addNumber("Minimum Circularity", 0.3);
-	Dialog.show();
-	minArea = Dialog.getNumber();
-	minCirc = Dialog.getNumber();
+	//Only asks for minArea and minCirc on 1st image
+	
+	if(i == 0){
+		//shows image for soma segmentation
+		setBatchMode("show");
+		
+		Dialog.createNonBlocking("Soma Segmentation");
+		Dialog.addMessage("Check that the watershed is correctly segmenting somas \n and measure the minArea and minCircularity you would like to count as a soma");
+		Dialog.addNumber("Minimum Area", 20);
+		Dialog.addNumber("Minimum Circularity", 0.3);
+		Dialog.show();
+		minArea = Dialog.getNumber();
+		minCirc = Dialog.getNumber();
+		//hides image
+		setBatchMode("hide");
+	}
 	//Analyze particles counts each of the distinct particles in the image
 	//and will make some measurements about them. It will ignore
 	//objects with areas less than minArea and circularity values
 	//less than minCirc. Circ = 4pi(area/perimeter^2) and is 1 for a 
 	//percet circle
 	run("Analyze Particles...", "size="+ minArea +"-Infinity circularity="+ minCirc +"-1.00 display exclude clear include summarize record add");
-	//here we pick the results table that analyze particles made so we can
+
+	
+		
+		//here we pick the results table that analyze particles made so we can
 	//save it. Most ImageJ functions will have data in a table named 
 	//"Results"
 	selectWindow("Results");
@@ -156,31 +187,31 @@ for (i = 0; i < listSource.length; i++) {
 	
 	if(slices > 1){
 		
-		for (i = 0; i < somaVolumes.length; i++){
-			roiManager("Select", i);
-			measureVol(i);
+		for (j = 0; j < somaVolumes.length; j++){
+			roiManager("Select", j);
+			measureVol(j);
 			selectWindow("Results");
-			Table.save(dirSave + title + "_cell_" + i + "_vol_results.csv");
-			somaVolumes[i] = processVol();
+			Table.save(dirSave + title + "_cell_" + j + "_vol_results.csv");
+			somaVolumes[j] = processVol();
 			Table.reset("Results");
 		}
 	}
 	
 	if(slices == 1){
 		
-		for (i = 0; i < somaVolumes.length; i++){
-			roiManager("Select", i);
+		for (j = 0; j < somaVolumes.length; j++){
+			roiManager("Select", j);
 			run("Measure");
-			somaVolumes[i] = getResult("Area",0) * getResult("%Area",0);
+			somaVolumes[j] = getResult("Area",0) * getResult("%Area",0);
 			selectWindow("Results");
-			Table.save(dirSave + title + "_cell_" + i + "_area_results.csv");
+			Table.save(dirSave + title + "_cell_" + j + "_area_results.csv");
 			Table.reset("Results");
 		}
 	}
 	
 	numArray = newArray(somaVolumes.length);
-	for (i = 0; i < numArray.length; i++) {
-		numArray[i] = i;
+	for (j = 0; j < numArray.length; j++) {
+		numArray[j] = j;
 	}
 	
 	
@@ -239,12 +270,12 @@ for (i = 0; i < listSource.length; i++) {
 	close("*");
 	selectWindow("Summary");
 	run("Close");
-	selectWindow("Log");
-	run("Close");
+	//selectWindow("Log");
+	//run("Close");
 	selectWindow("Threshold");
 	run("Close");
-	selectWindow("ROI Manager");
-	run("Close");
+	//selectWindow("ROI Manager");
+	//run("Close");
 	
 	//get cellNum from outline somehow (if it is total number)
 	
@@ -266,12 +297,16 @@ for (i = 0; i < listSource.length; i++) {
 	
 	//select cell
 	cellNum = 1;
+
+	//leaves batch mode for fraclac
+	setBatchMode("exit and display");
 	
 	open(imageDir);
 	
 	run("Z Project...", "projection=[Max Intensity]");
-	
-	moreCells = getBoolean("Are there more cells you want to analyze with FracLac?");
+
+	//change if you want to use fraclac
+	moreCells = false;		//moreCells = getBoolean("Are there more cells you want to analyze with FracLac?");
 	
 	while(moreCells){
 		waitForUser("Cell ROI", "Draw a freehand ROI around a cell in the image. Be sure to capture the entire cell in the ROI without any parts of other cells or background");
@@ -325,7 +360,7 @@ for (i = 0; i < listSource.length; i++) {
 		
 			close("*");
 		
-			run("Close All");
+			//run("Close All");
 		
 			open(imageDir);
 		
@@ -334,9 +369,10 @@ for (i = 0; i < listSource.length; i++) {
 	}
 	
 	close("*");
-	run("Close All");
+	//run("Close All");
 
 }
+print("Done");
 
 
 function measureVol(roiNum) { 
