@@ -1,7 +1,7 @@
 #author Justin Savage
 #js664@duke.edu
-#Version 1.0
-#10/4/20
+#Version 2.0
+#10/6/20
 
 #loaded RStudioAPI to use for selecting working directory
 if("rstudioapi" %in% rownames(installed.packages()) == FALSE) 
@@ -23,12 +23,12 @@ if("tidyverse" %in% rownames(installed.packages()) == FALSE)
 {install.packages("tidyverse")}
 library(tidyverse)
 
-dataFile <- selectDirectory(
+sourceDir <- selectDirectory(
   caption = "Select Directory",
   label = "Select",
   path = getActiveProject()
 )
-setwd(dataFile)
+setwd(sourceDir)
 
 allData <- tibble(
   ImageName = "", 
@@ -42,25 +42,30 @@ currentData <- allData
 
 
 folders <- list.files()
+folders <- folders[grep("outputs", folders)]
 
 i <- 1
 
 for (i in c(1:length(folders))) {
   print(i)
-  dataFiles <- list.files(folders[i])
   currentFolder <- folders[i]
+  dataFiles <- list.files(currentFolder)
   print(currentFolder)
-  
-  dataFiles <- list.files()
   
   #############################
   #Step 1
   #############################
   
-  branchInfo <- read.csv(dataFiles[grep("Branch", dataFiles)])
-  results <- read.csv(dataFiles[grep("Results", dataFiles)])
+  currentPath <- str_c(sourceDir, currentFolder, sep = "/")
+  branchString <- str_c(currentPath,  dataFiles[grep("Branch", dataFiles)], sep = "/")
+
+  branchInfo <- read.csv(branchString)
   
-  vols <- keyFiles <- list.files(pattern = 'vol_results')
+  resultsString <- str_c(currentPath,  dataFiles[grep("Results", dataFiles)], sep = "/")
+  
+  results <- read.csv(resultsString)
+  
+  vols <- list.files(currentFolder, pattern = 'vol_results')
   numCells <- length(vols)
   
   dataOut <- tibble(
@@ -121,16 +126,20 @@ for (i in c(1:length(folders))) {
   dataOut$BranchLengthPerCell <- branchLengthPerCell
   dataOut$EndPointsPerCell <- endPointsPerCell
   
-  write.csv(dataOut, "dataOut.csv")
+  outputPath <- str_c(currentPath, "dataOut.csv", sep = "/")
+  write.csv(dataOut, outputPath)
   
   
   #############################
   #Step 2
   #############################
   
-  currentName <- dataFiles[grep("dataOut", dataFiles)]
-  currentPath <- str_c(dataFile, "/" ,currentFolder ,"/",currentName)
-  currentData <- read.csv(currentPath)
+  #refresh dataFiles to include new dataOut
+  #dataFiles <- list.files(currentFolder)
+  
+  #currentName <- dataFiles[grep("dataOut", dataFiles)]
+  #currentPath <- str_c(dataFile, "/" ,currentFolder ,"/",currentName)
+  currentData <- dataOut
   if(length(grep("left", currentFolder)) > 0) {
     currentData$Side <- "L"
   }
@@ -151,6 +160,10 @@ for (i in c(1:length(folders))) {
     allData <- full_join(allData, currentData)
   }
 }
+
+####################
+#Analyze Final Data
+####################
 
 leftData <- filter(allData, Side == "L")
 rightData <- filter(allData, Side == "R")
