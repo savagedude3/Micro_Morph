@@ -23,8 +23,8 @@ To actually use the macro you will have to do the following:
 1. You will be asked the manually threshold the image. This step will take some experimentation and could be replaced by an automated thresholding algorithm in the future.
 1. You will be asked to input the minimum cell soma area and circularity that you wish to have counted. You can use the tools in FIJI to measure these things on your image while the dialog box is up.
 1. It will then do the analysis of the skeleton images and ask you where you want to save your data files
-~~1. The prompt will ask you to draw an ROI around a single cell for FracLac.
-1. FracLac will then open and there will be a prompt to give you instructions. Don't click Ok on that prompt until FracLac shows the Box Count Summary chart.~~ (took these out for now)
+1. ~~The prompt will ask you to draw an ROI around a single cell for FracLac.~~
+1. ~~FracLac will then open and there will be a prompt to give you instructions. Don't click Ok on that prompt until FracLac shows the Box Count Summary chart.~~ (took these out for now)
 1. The macro saved all of the important data so you can just close FIJI to get rid of all of the other windows that are open.
 
 To analyze the data:
