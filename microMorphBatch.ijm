@@ -83,6 +83,10 @@ for (i = 0; i < listSource.length; i++) {
 	//value lower than the threshold is set to 0
 	run("Convert to Mask", "method=Default background=Dark");
 
+	//have to invert look up table so that it is white on black instead of
+	//black on white to work on Windows
+	run("Invert LUT");
+
 	//hide the image
 	setBatchMode("hide");
 	
@@ -128,6 +132,7 @@ for (i = 0; i < listSource.length; i++) {
 		run("Z Project...", "projection=[Max Intensity]");
 	}
 	
+	
 	//soma detection and measurement in 2D
 	//can use the ROIs from this method as ROIs for 3D volume analysis
 	//of Z stack images
@@ -136,6 +141,8 @@ for (i = 0; i < listSource.length; i++) {
 	//each object and then draw lines (called watersheds) to separate 
 	//the object from eachother. This is slightly different than
 	//the standard watershed algorithm but has the same basic effect.
+	
+	
 	run("Watershed");
 	//will only count object larger than minPixel as somas
 	//This collects the minArea and minCirc values using a dialog box.
