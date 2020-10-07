@@ -118,7 +118,7 @@ for (i in c(1:length(folders))) {
   branchLengthPerCell <- totBranchLength/numCells
   
   #change so imageName is correct
-  tempImageName <- str_split(dataFile, "/")
+  tempImageName <- str_split(currentPath, "/")
   tempImageName <- tempImageName[[length(tempImageName)]]
   tempImageName <- tempImageName[length(tempImageName)]
   
