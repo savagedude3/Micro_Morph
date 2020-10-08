@@ -85,10 +85,14 @@ for (i = 0; i < listSource.length; i++) {
 
 	//have to invert look up table so that it is white on black instead of
 	//black on white to work on Windows
-	run("Invert LUT");
+	
+	if(getInfo("os.name") == "Windows"){
+		run("Invert LUT");
+	}
 
 	//hide the image
 	setBatchMode("hide");
+	
 	
 	run("Despeckle", "stack");
 	//This dilates and then erodes the image. A pixel is added to 
@@ -129,21 +133,24 @@ for (i = 0; i < listSource.length; i++) {
 	//if it is a Zstack, we want to make a z projection to more easily
 	//see the cell somas
 	if(slices > 1){
-		run("Z Project...", "projection=[Max Intensity]");
+		run("Z Project...", "projection=[Sum Slices]");
 	}
 	
+	run("8-bit");
+	run("Auto Threshold", "method=Moments white");
+	run("Convert to Mask");
+	run("Close-");
+	run("Close-");
+	run("Close-");
 	
 	//soma detection and measurement in 2D
 	//can use the ROIs from this method as ROIs for 3D volume analysis
 	//of Z stack images
 	run("Duplicate...", "title=" + title + "_somas2 duplicate");
-	//watershed will use an erosion-like technique to find the middle of
-	//each object and then draw lines (called watersheds) to separate 
-	//the object from eachother. This is slightly different than
-	//the standard watershed algorithm but has the same basic effect.
+
+	run("Invert LUT");
+
 	
-	
-	run("Watershed");
 	//will only count object larger than minPixel as somas
 	//This collects the minArea and minCirc values using a dialog box.
 	//It is common in programming for these to have separate create,
@@ -157,7 +164,7 @@ for (i = 0; i < listSource.length; i++) {
 		Dialog.createNonBlocking("Soma Segmentation");
 		Dialog.addMessage("Check that the watershed is correctly segmenting somas \n and measure the minArea and minCircularity you would like to count as a soma");
 		Dialog.addNumber("Minimum Area", 20);
-		Dialog.addNumber("Minimum Circularity", 0.3);
+		Dialog.addNumber("Minimum Circularity", 0.1);
 		Dialog.show();
 		minArea = Dialog.getNumber();
 		minCirc = Dialog.getNumber();
@@ -169,9 +176,10 @@ for (i = 0; i < listSource.length; i++) {
 	//objects with areas less than minArea and circularity values
 	//less than minCirc. Circ = 4pi(area/perimeter^2) and is 1 for a 
 	//percet circle
-	run("Analyze Particles...", "size="+ minArea +"-Infinity circularity="+ minCirc +"-1.00 display exclude clear include summarize record add");
 
-	
+	run("Invert LUT");
+
+	run("Analyze Particles...", "size="+ minArea +"-Infinity circularity="+ minCirc +"-1.00 display exclude clear include summarize record add");
 		
 		//here we pick the results table that analyze particles made so we can
 	//save it. Most ImageJ functions will have data in a table named 
@@ -233,8 +241,6 @@ for (i = 0; i < listSource.length; i++) {
 	
 	//print(somaVolumes[0]);
 	
-	//setBatchMode("exit and display");
-	//save?
 	
 	selectWindow(title + "_binary");
 	run("Select All");
