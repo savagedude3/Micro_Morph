@@ -31,8 +31,9 @@ for (i = 0; i < listSource.length; i++) {
 	//so we can treat Zstacks and regular images differently
 	//displays middle stack
 	Stack.getDimensions(width, height, channels, slices, frames);
-	setSlice(slices/2);
-	
+	if (slices > 1) {
+		setSlice(slices/2);
+	}
 	//this gets the name of the image so that we can select it explicitly
 	//and name other images we'll create with a name that shows they
 	//came from this image
