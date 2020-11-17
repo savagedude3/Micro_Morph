@@ -245,6 +245,14 @@ for (i = 0; i < listSource.length; i++) {
 	
 	selectWindow(title + "_binary");
 	run("Select All");
+
+	//waitForUser("Pre invert");
+
+	if(indexOf(getInfo("os.name"), "Windows") >= 0){
+		run("Invert LUT");
+	}
+
+	//waitForUser("About to skeletonize");
 	
 	run("Duplicate...", "title=" + title + "_skeleton duplicate");
 	
